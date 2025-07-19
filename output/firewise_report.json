@@ -1,0 +1,62 @@
+[
+  {
+    "finding": "Weak IKE Crypto Profiles",
+    "risk_level": "Medium",
+    "recommendation": "Replace default IKE crypto profiles with stronger ciphers like AES-256, SHA-256 or higher, and DH Group 19 or higher.  Remove or disable weaker ciphers like 3DES and SHA1."
+  },
+  {
+    "finding": "Weak IPSec Crypto Profiles",
+    "risk_level": "Medium",
+    "recommendation": "Replace default IPSec crypto profiles with stronger ciphers like AES-256-GCM and DH Group 19 or higher. Remove or disable weaker ciphers like 3DES and SHA1."
+  },
+  {
+    "finding": "GlobalProtect App Crypto Profile Uses Weak Ciphers",
+    "risk_level": "Medium",
+    "recommendation": "Update the GlobalProtect app crypto profile 'default' to use AES-256 and SHA-256 or higher. Disable weaker ciphers like AES-128 and SHA1."
+  },
+  {
+    "finding": "Botnet Dynamic DNS Protection Threshold Too Low",
+    "risk_level": "Medium",
+    "recommendation": "Increase the dynamic DNS threshold from 5 to a higher value to reduce false positives while maintaining effective protection."
+  },
+  {
+    "finding": "Botnet Malware Sites Protection Threshold Too Low",
+    "risk_level": "Medium",
+    "recommendation": "Increase the malware sites threshold from 5 to a higher value."
+  },
+  {
+    "finding": "Botnet Recent Domains Protection Threshold Too Low",
+    "risk_level": "Medium",
+    "recommendation": "Increase the recent domains threshold from 5 to a higher value."
+  },
+  {
+    "finding": "Botnet IP Domains Protection Threshold Too Low",
+    "risk_level": "Medium",
+    "recommendation": "Increase the IP domains threshold from 10 to a higher value."
+  },
+  {
+    "finding": "Botnet Executables from Unknown Sites Threshold Too Low",
+    "risk_level": "Medium",
+    "recommendation": "Increase the executables from unknown sites threshold from 5 to a higher value."
+  },
+  {
+    "finding": "Unknown TCP and UDP Session Thresholds Too Low",
+    "risk_level": "Medium",
+    "recommendation": "Increase the destinations-per-hour and sessions-per-hour thresholds for both unknown TCP and UDP from 10 to more appropriate values based on your network traffic."
+  },
+  {
+    "finding": "Unknown TCP and UDP Session Length Limits Too Low",
+    "risk_level": "Medium",
+    "recommendation": "Adjust the maximum-bytes and minimum-bytes for unknown TCP and UDP session lengths based on your network traffic patterns."
+  },
+  {
+    "finding": "Overly Permissive Security Rule",
+    "risk_level": "High",
+    "recommendation": "Review and refine rule1 to specify source, destination, service, and application. Avoid using 'any' for all fields in a security rule."
+  },
+  {
+    "finding": "Management Plane Access over HTTP",
+    "risk_level": "Low",
+    "recommendation": "HTTP management access is disabled, but ensure HTTPS is enforced and configured properly."
+  }
+]
