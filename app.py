@@ -1,85 +1,73 @@
 import streamlit as st
-import os
-import json
-import pandas as pd
 from dotenv import load_dotenv
-from openai import OpenAI
-from utils.parser import extract_summary
-import google.generativeai as genai
+import json
 
-# Load API keys from .env
+# ✅ Must be first Streamlit command
+st.set_page_config(page_title="🔥 Firewise AI", layout="wide")
+
+# ✅ Load environment variables
 load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY")
-gemini_api_key = os.getenv("GEMINI_API_KEY")
 
-# Initialize OpenAI client
-openai_client = OpenAI(api_key=openai_api_key)
+# ✅ Import supporting modules
+from utils.parser import extract_config_summary
+from config_parser import format_config_for_display
+from ai_engines import get_ai_stream
+from export_tracker import add_log_entry, get_export_dataframe
 
-# Configure Gemini
-genai.configure(api_key=gemini_api_key)
-gemini_model = genai.GenerativeModel("gemini-1.5-pro")
+# 🔥 App title and description
+st.title("🔥 Firewise AI – Posture Validator")
+st.markdown("Upload a PAN-OS XML config file, choose your AI engine, and ask posture validation questions.")
 
-# Streamlit UI
-st.set_page_config(page_title="Firewise AI - PAN-OS Posture Validator")
-st.title("🔥 Firewise AI – PAN-OS Posture Validator")
-st.markdown("Upload your PAN-OS config `.xml` file to receive an AI-driven security posture assessment.")
-
-# Upload UI
-uploaded_file = st.file_uploader("📁 Upload PAN-OS config file", type=["xml"])
-model_choice = st.radio("🧠 Choose LLM Engine", ["GPT-4.1 (OpenAI)", "Gemini Pro (Google)"])
+# 📁 Upload config file
+uploaded_file = st.file_uploader("📁 Upload Config File", type=["xml"])
 
 if uploaded_file:
-    file_contents = uploaded_file.read()
-    st.success("✅ File uploaded successfully.")
+    file_bytes = uploaded_file.read()
+    
+    # Process the file for both display and AI analysis
+    display_config = format_config_for_display(uploaded_file.name, file_bytes)
+    config_summary_str = extract_config_summary(file_bytes)
+    
+    st.subheader("📄 Configuration Preview")
+    st.code(display_config, language="xml")
 
-    config_summary = extract_summary(file_contents)
+    # 💬 User question
+    st.subheader("💬 Ask a Question")
+    question = st.text_input("e.g., Are any admin accounts missing password complexity?", key="user_question")
 
-    if st.button("🔍 Run Firewise Validation"):
-        with st.spinner(f"Analyzing with {model_choice}..."):
+    # 🔄 Model selector
+    model_choice = st.radio("Choose AI engine:", ("Gemini", "GPT-4"), horizontal=True)
+
+    # 🧠 Run question
+    if st.button("🧠 Get Answer"):
+        if not question:
+            st.warning("Please enter a question.")
+        else:
+            full_prompt = f"Here is the firewall configuration summary in JSON format:\n{config_summary_str}\n\nUser Question: {question}"
+            
+            st.subheader("🧠 AI Response")
             try:
-                full_prompt = (
-                    "You are a cybersecurity expert specializing in Palo Alto Networks PAN-OS firewall configurations.\n\n"
-                    "Analyze the following PAN-OS configuration summary. Identify security misconfigurations or risks and return a list of findings in JSON format. "
-                    "Each finding should include:\n"
-                    "- finding: A short description of the issue\n"
-                    "- risk_level: High, Medium, or Low\n"
-                    "- recommendation: A best-practice fix or improvement\n\n"
-                    "Only return a raw JSON array. Do not include any explanation or Markdown formatting."
-                )
+                response_stream = get_ai_stream(model_choice, full_prompt)
+                full_response = st.write_stream(response_stream)
+                
+                # ✅ Log the successful Q&A interaction
+                add_log_entry(question, model_choice, full_response)
 
-                if model_choice == "GPT-4.1 (OpenAI)":
-                    response = openai_client.chat.completions.create(
-                        model="gpt-4.1",
-                        messages=[
-                            {"role": "system", "content": full_prompt},
-                            {"role": "user", "content": str(config_summary)}
-                        ]
-                    )
-                    raw_json_text = response.choices[0].message.content.strip()
+            except (ValueError, RuntimeError) as e:
+                st.error(str(e))
 
-                else:  # Gemini Pro with Streaming
-                    streamed_text = ""
-                    for chunk in gemini_model.generate_content(
-                        f"{full_prompt}\n\n{config_summary}",
-                        stream=True
-                    ):
-                        if chunk.text:
-                            streamed_text += chunk.text
-                            st.markdown("```json\n" + streamed_text + "\n```")
+# 📦 Export Session Log
+st.subheader("📦 Export Session Log")
+log_df = get_export_dataframe()
 
-                    raw_json_text = streamed_text.strip()
-
-                # Parse and show
-                parsed_json = json.loads(raw_json_text)
-                df = pd.DataFrame(parsed_json)
-                st.success("✅ JSON parsed successfully")
-                st.dataframe(df)
-
-                # Save outputs
-                with open("output/firewise_report.json", "w") as jf:
-                    json.dump(parsed_json, jf, indent=2)
-                df.to_csv("output/firewise_report.csv", index=False)
-                st.success("📄 Saved: JSON + CSV")
-
-            except Exception as e:
-                st.error(f"❌ LLM request failed: {e}")
+if not log_df.empty:
+    st.dataframe(log_df)
+    csv = log_df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="⬇️ Download Log as CSV",
+        data=csv,
+        file_name="firewise_ai_log.csv",
+        mime="text/csv",
+    )
+else:
+    st.caption("Your Q&A log is empty.")

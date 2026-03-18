@@ -1,6 +1,8 @@
-streamlit
-openai
-python-dotenv
-pandas
-xmltodict
-google-generativeai
+# For fully reproducible builds, all versions are pinned.
+streamlit==1.33.0
+openai==1.35.13
+google-generativeai==0.7.2
+python-dotenv==1.0.1
+pandas==2.2.2
+xmltodict==0.13.0
+httpx==0.27.0 # ✅ Add this line
